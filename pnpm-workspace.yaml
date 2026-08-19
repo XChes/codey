@@ -1,0 +1,11 @@
+allowBuilds:
+  better-sqlite3: true
+  electron: true
+  electron-winstaller: false
+  esbuild: true
+  '@google/genai': false
+  protobufjs: false
+minimumReleaseAgeExclude:
+  - '@aws-sdk/credential-provider-ini@3.973.14'
+  - '@aws-sdk/credential-provider-login@3.972.76'
+  - '@ag-ui/core@0.0.58'

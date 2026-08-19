@@ -1,0 +1,23 @@
+appId: com.local.desktopagent
+productName: Desktop Agent
+directories:
+  output: dist
+files:
+  - out/**/*
+  - package.json
+extraResources:
+  - from: resources/gh/arm64/gh
+    to: bin/gh
+  - from: third_party/github-cli-LICENSE.txt
+    to: licenses/github-cli-LICENSE.txt
+asar: true
+asarUnpack:
+  - node_modules/better-sqlite3/**/*
+  - node_modules/@vscode/ripgrep*/**/*
+mac:
+  category: public.app-category.developer-tools
+  identity: null
+  target:
+    - target: dir
+      arch:
+        - arm64

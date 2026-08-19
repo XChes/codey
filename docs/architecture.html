@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<!--
+  Derived from Cocoon AI's architecture-diagram template.
+  Copyright (c) 2025 Cocoon AI. Licensed under the MIT License.
+-->
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Codey 当前产品架构</title>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js" integrity="sha384-ZZ1pncU3bQe8y31yfZdMFdSpttDoPmOZg2wguVK9almUodir1PghgT0eY7Mrty8H" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js" integrity="sha384-en/ztfPSRkGfME4KIm05joYXynqzUgbsG5nMrj/xEFAHXkeZfO3yMK8QQ+mP7p1/" crossorigin="anonymous"></script>
+  <style>
+    :root {
+      --page: #020617;
+      --panel: rgba(15, 23, 42, 0.62);
+      --panel-solid: #0f172a;
+      --border: #1e293b;
+      --muted: #94a3b8;
+      --dim: #475569;
+      --client: #22d3ee;
+      --service: #34d399;
+      --data: #a78bfa;
+      --platform: #fbbf24;
+      --security: #fb7185;
+      --async: #fb923c;
+      --external: #94a3b8;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      min-height: 100vh;
+      padding: 32px;
+      background: var(--page);
+      color: #fff;
+      font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    }
+
+    .container { max-width: 1560px; margin: 0 auto; }
+    .header { margin-bottom: 24px; }
+    .header-row { display: flex; align-items: center; gap: 12px; }
+
+    .pulse-dot {
+      width: 10px;
+      height: 10px;
+      flex: 0 0 auto;
+      border-radius: 999px;
+      background: var(--client);
+      box-shadow: 0 0 18px rgba(34, 211, 238, 0.55);
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.45; } }
+
+    h1 { font-size: 24px; letter-spacing: -0.025em; }
+    .subtitle { margin: 7px 0 0 22px; color: var(--muted); font-size: 13px; }
+    .section-heading { margin: 26px 0 10px; color: #e2e8f0; font-size: 14px; }
+    .section-note { margin-bottom: 12px; color: var(--dim); font-size: 11px; }
+
+    .diagram-container {
+      overflow-x: auto;
+      padding: 24px;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      background: var(--panel);
+      box-shadow: 0 28px 80px rgba(0, 0, 0, 0.22);
+    }
+
+    svg { display: block; width: 100%; min-width: 1120px; }
+
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+      margin-top: 20px;
+    }
+
+    .card {
+      min-height: 148px;
+      padding: 18px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: var(--panel);
+    }
+
+    .card-header { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+    .card-dot { width: 8px; height: 8px; border-radius: 999px; }
+    .card h2 { font-size: 13px; }
+    .card ul { list-style: none; color: var(--muted); font-size: 11px; line-height: 1.7; }
+    .card li + li { margin-top: 3px; }
+    .footer { margin-top: 18px; color: var(--dim); font-size: 11px; text-align: center; }
+
+    .toolbar { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+    .toolbar-actions { display: none; gap: 8px; }
+    .toolbar.expanded .toolbar-actions { display: flex; }
+
+    .toolbar button {
+      padding: 6px 10px;
+      border: 1px solid #334155;
+      border-radius: 6px;
+      background: rgba(30, 41, 59, 0.82);
+      color: var(--muted);
+      font: inherit;
+      font-size: 11px;
+      cursor: pointer;
+    }
+
+    .toolbar button:hover { border-color: var(--dim); color: #fff; }
+    .toolbar .toolbar-toggle { border: 0; background: transparent; color: var(--dim); font-size: 18px; }
+
+    .node-title { fill: #fff; font-size: 12px; font-weight: 600; text-anchor: middle; }
+    .node-sub { fill: #94a3b8; font-size: 9px; text-anchor: middle; }
+    .node-id { fill: #64748b; font-size: 8px; font-weight: 600; }
+    .boundary-title { font-size: 11px; font-weight: 600; }
+    .flow-label { fill: #94a3b8; font-size: 9px; }
+    .small-label { fill: #64748b; font-size: 8px; }
+    .lane-title { fill: #e2e8f0; font-size: 11px; font-weight: 600; }
+
+    @media (max-width: 900px) {
+      body { padding: 18px; }
+      .cards { grid-template-columns: 1fr; }
+    }
+
+    @media print {
+      body { padding: 16px; background: var(--page); }
+      .toolbar { display: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <main class="container" id="report-container">
+    <header class="header">
+      <div class="header-row">
+        <div class="pulse-dot" aria-hidden="true"></div>
+        <h1>Codey 当前产品架构</h1>
+        <div class="toolbar">
+          <div class="toolbar-actions">
+            <button type="button" onclick="copyAsImage(this)">Copy</button>
+            <button type="button" onclick="downloadPNG(this)">PNG</button>
+            <button type="button" onclick="downloadPDF(this)">PDF</button>
+          </div>
+          <button class="toolbar-toggle" type="button" onclick="this.parentElement.classList.toggle('expanded')" aria-label="Export options" title="Export options">⋯</button>
+        </div>
+      </div>
+      <p class="subtitle">32 个主要逻辑节点：从项目进入、会话编排到每个 Agent 独立 SRT，再回到文件审查和持久化。</p>
+    </header>
+
+    <h2 class="section-heading">1 · 全产品组件与关系</h2>
+    <p class="section-note">青色是 UI，绿色是 Main 服务，黄色是可信运行平台，玫红是安全边界，紫色是持久化；实线为调用，橙色虚线为事件/委派，玫红虚线为权限或凭证。</p>
+    <section class="diagram-container" aria-label="Codey full product architecture">
+      <svg viewBox="0 0 1900 1180" role="img" aria-labelledby="diagram-title diagram-description">
+        <title id="diagram-title">Codey 当前全产品架构</title>
+        <desc id="diagram-description">用户从 React Renderer 通过 context-isolated preload 和 Electron IPC 进入 Main。Main 管理项目、会话、worktree、文件审查、凭证与每个 agent 的运行时。每个 agent 拥有独立 Agent Host，Host 在 SRT 外管理一个被 macOS Seatbelt 包裹的 Pi worker。数据分别落在 SQLite、Pi JSONL、execution root 和 review baseline。</desc>
+        <defs>
+          <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+            <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#1e293b" stroke-width="0.5"/>
+          </pattern>
+          <marker id="arrow" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+            <polygon points="0 0, 10 3.5, 0 7" fill="#64748b"/>
+          </marker>
+          <marker id="arrow-primary" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+            <polygon points="0 0, 10 3.5, 0 7" fill="#22d3ee"/>
+          </marker>
+          <marker id="arrow-async" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+            <polygon points="0 0, 10 3.5, 0 7" fill="#fb923c"/>
+          </marker>
+          <marker id="arrow-trust" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+            <polygon points="0 0, 10 3.5, 0 7" fill="#fb7185"/>
+          </marker>
+          <filter id="primary-glow" x="-40%" y="-40%" width="180%" height="180%">
+            <feGaussianBlur stdDeviation="3" result="blur"/>
+            <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+        </defs>
+
+        <rect width="100%" height="100%" fill="url(#grid)"/>
+
+        <!-- Boundaries -->
+        <rect x="20" y="80" width="280" height="850" rx="16" fill="rgba(8,51,68,.05)" stroke="#22d3ee" stroke-width="1" stroke-dasharray="8 5"/>
+        <text x="38" y="105" fill="#22d3ee" class="boundary-title">Renderer process · sandboxed webContents</text>
+
+        <rect x="330" y="80" width="730" height="850" rx="16" fill="rgba(6,78,59,.035)" stroke="#34d399" stroke-width="1" stroke-dasharray="8 5"/>
+        <text x="348" y="105" fill="#34d399" class="boundary-title">Electron Main · trusted owner / single writer</text>
+
+        <rect x="1090" y="80" width="780" height="850" rx="16" fill="rgba(120,53,15,.035)" stroke="#fbbf24" stroke-width="1" stroke-dasharray="8 5"/>
+        <text x="1108" y="105" fill="#fbbf24" class="boundary-title">Per-agent runtime · one lead + zero or more independent subagents</text>
+
+        <rect x="1120" y="125" width="335" height="770" rx="13" fill="rgba(120,53,15,.06)" stroke="#fbbf24" stroke-width="1"/>
+        <text x="1138" y="150" fill="#fbbf24" class="boundary-title">Agent Host process · trusted / outside SRT</text>
+
+        <rect x="1485" y="125" width="350" height="770" rx="13" fill="rgba(136,19,55,.07)" stroke="#fb7185" stroke-width="1.5"/>
+        <text x="1503" y="150" fill="#fb7185" class="boundary-title">Anthropic SRT · macOS Seatbelt boundary</text>
+
+        <!-- Connectors: primary request flow -->
+        <path d="M 160 50 V 170" fill="none" stroke="#22d3ee" stroke-width="2" marker-end="url(#arrow-primary)"/>
+        <path d="M 160 240 V 290" fill="none" stroke="#22d3ee" stroke-width="2" marker-end="url(#arrow-primary)"/>
+        <path d="M 270 325 H 355" fill="none" stroke="#22d3ee" stroke-width="2" marker-end="url(#arrow-primary)"/>
+        <path d="M 555 215 H 590" fill="none" stroke="#22d3ee" stroke-width="2" marker-end="url(#arrow-primary)"/>
+        <path d="M 810 215 H 835" fill="none" stroke="#22d3ee" stroke-width="2" marker-end="url(#arrow-primary)"/>
+        <path d="M 930 250 V 300 H 710 V 345" fill="none" stroke="#22d3ee" stroke-width="2" marker-end="url(#arrow-primary)"/>
+        <path d="M 810 380 H 835" fill="none" stroke="#22d3ee" stroke-width="2" marker-end="url(#arrow-primary)"/>
+        <path d="M 1035 380 H 1135" fill="none" stroke="#22d3ee" stroke-width="2" marker-end="url(#arrow-primary)"/>
+        <path d="M 1280 420 V 485" fill="none" stroke="#22d3ee" stroke-width="2" marker-end="url(#arrow-primary)"/>
+        <path d="M 1420 520 H 1470 V 255 H 1510" fill="none" stroke="#22d3ee" stroke-width="2" marker-end="url(#arrow-primary)"/>
+        <path d="M 1660 290 V 365" fill="none" stroke="#22d3ee" stroke-width="2" marker-end="url(#arrow-primary)"/>
+        <path d="M 1600 435 V 465 H 1498 V 705 H 1510" fill="none" stroke="#22d3ee" stroke-width="2" marker-end="url(#arrow-primary)"/>
+        <path d="M 1720 435 V 535" fill="none" stroke="#fb923c" stroke-width="1.5" stroke-dasharray="7 5" marker-end="url(#arrow-async)"/>
+
+        <!-- Main-service fanout -->
+        <path d="M 455 250 V 480 H 455 V 520" fill="none" stroke="#64748b" stroke-width="1.2" marker-end="url(#arrow)"/>
+        <path d="M 455 590 V 635" fill="none" stroke="#64748b" stroke-width="1.2" marker-end="url(#arrow)"/>
+        <path d="M 455 705 V 750" fill="none" stroke="#64748b" stroke-width="1.2" marker-end="url(#arrow)"/>
+        <path d="M 455 590 H 700 V 520" fill="none" stroke="#64748b" stroke-width="1.2" marker-end="url(#arrow)"/>
+        <path d="M 455 590 H 920 V 520" fill="none" stroke="#64748b" stroke-width="1.2" marker-end="url(#arrow)"/>
+        <path d="M 700 590 V 635" fill="none" stroke="#fb7185" stroke-width="1.3" stroke-dasharray="6 5" marker-end="url(#arrow-trust)"/>
+        <path d="M 700 590 V 750" fill="none" stroke="#64748b" stroke-width="1.2" marker-end="url(#arrow)"/>
+        <path d="M 920 590 V 635" fill="none" stroke="#64748b" stroke-width="1.2" marker-end="url(#arrow)"/>
+
+        <!-- Data / external dependencies -->
+        <path d="M 700 590 V 950 H 155 V 1010" fill="none" stroke="#a78bfa" stroke-width="1.2" marker-end="url(#arrow)"/>
+        <path d="M 700 705 V 950 H 365 V 1010" fill="none" stroke="#fb7185" stroke-width="1.3" stroke-dasharray="6 5" marker-end="url(#arrow-trust)"/>
+        <path d="M 455 820 V 965 H 600 V 1010" fill="none" stroke="#a78bfa" stroke-width="1.2" marker-end="url(#arrow)"/>
+        <path d="M 920 590 V 965 H 600 V 1010" fill="none" stroke="#a78bfa" stroke-width="1.2"/>
+        <path d="M 920 705 V 970 H 1025 V 1010" fill="none" stroke="#a78bfa" stroke-width="1.2" marker-end="url(#arrow)"/>
+        <path d="M 700 820 V 965 H 1235 V 1010" fill="none" stroke="#a78bfa" stroke-width="1.2" marker-end="url(#arrow)"/>
+        <path d="M 455 705 H 395 V 965 H 1475 V 1010" fill="none" stroke="#64748b" stroke-width="1.2" marker-end="url(#arrow)"/>
+        <path d="M 1660 435 V 965 H 810 V 1010" fill="none" stroke="#a78bfa" stroke-width="1.2" marker-end="url(#arrow)"/>
+        <path d="M 1660 740 V 965 H 600 V 1010" fill="none" stroke="#a78bfa" stroke-width="1.2" marker-end="url(#arrow)"/>
+
+        <!-- Network and credential path -->
+        <path d="M 1660 400 H 1460 V 745 H 1420" fill="none" stroke="#fb7185" stroke-width="1.5" stroke-dasharray="6 5" marker-end="url(#arrow-trust)"/>
+        <path d="M 1510 415 H 1470 V 600 H 1420" fill="none" stroke="#fb7185" stroke-width="1.5" stroke-dasharray="6 5" marker-end="url(#arrow-trust)"/>
+        <path d="M 1280 780 V 965 H 1715 V 1010" fill="none" stroke="#fb7185" stroke-width="1.5" stroke-dasharray="6 5" marker-end="url(#arrow-trust)"/>
+        <path d="M 800 670 H 1070 V 385 H 1135" fill="none" stroke="#fb7185" stroke-width="1.4" stroke-dasharray="6 5" marker-end="url(#arrow-trust)"/>
+        <path d="M 1420 385 H 1438 V 745 H 1420" fill="none" stroke="#fb7185" stroke-width="1.4" stroke-dasharray="6 5" marker-end="url(#arrow-trust)"/>
+
+        <!-- Async reverse events, permissions, delegation -->
+        <path d="M 1520 570 H 1460 V 170 H 1080 V 120 H 540 V 170 H 160" fill="none" stroke="#fb923c" stroke-width="1.5" stroke-dasharray="7 5" marker-end="url(#arrow-async)"/>
+        <text x="770" y="112" class="flow-label">AG-UI task events · runtime state · queue/todo updates</text>
+
+        <path d="M 1140 600 H 1065 V 450 H 555 V 335 H 270" fill="none" stroke="#fb7185" stroke-width="1.3" stroke-dasharray="6 5" marker-end="url(#arrow-trust)"/>
+        <text x="845" y="442" class="flow-label">permission request / user decision</text>
+
+        <path d="M 1510 400 H 1465 V 190 H 1080 V 270 H 700 V 250" fill="none" stroke="#fb923c" stroke-width="1.5" stroke-dasharray="7 5" marker-end="url(#arrow-async)"/>
+        <text x="1110" y="182" class="flow-label">lead task tool → delegation → new runtime</text>
+
+        <!-- User actor -->
+        <rect x="90" y="16" width="140" height="34" rx="17" fill="#0f172a" stroke="#94a3b8"/>
+        <text x="160" y="38" fill="#e2e8f0" font-size="10" font-weight="600" text-anchor="middle">Developer</text>
+
+        <!-- Renderer nodes -->
+        <rect x="50" y="170" width="220" height="70" rx="9" fill="#0f172a"/>
+        <rect x="50" y="170" width="220" height="70" rx="9" fill="rgba(8,51,68,.4)" stroke="#22d3ee" stroke-width="1.5"/>
+        <text x="62" y="187" class="node-id">01</text>
+        <text x="160" y="200" class="node-title">React Renderer</text>
+        <text x="160" y="220" class="node-sub">Projects · Chat · Review · Settings</text>
+
+        <rect x="50" y="290" width="220" height="70" rx="9" fill="#0f172a"/>
+        <rect x="50" y="290" width="220" height="70" rx="9" fill="rgba(8,51,68,.4)" stroke="#22d3ee" stroke-width="1.5"/>
+        <text x="62" y="307" class="node-id">02</text>
+        <text x="160" y="320" class="node-title">Preload DesktopBridge</text>
+        <text x="160" y="340" class="node-sub">contextBridge · typed invoke/events only</text>
+
+        <rect x="50" y="455" width="220" height="70" rx="9" fill="#0f172a"/>
+        <rect x="50" y="455" width="220" height="70" rx="9" fill="rgba(8,51,68,.25)" stroke="#22d3ee"/>
+        <text x="62" y="472" class="node-id">03</text>
+        <text x="160" y="485" class="node-title">Desktop Shell</text>
+        <text x="160" y="505" class="node-sub">Window · dialogs · theme · state</text>
+
+        <!-- Electron Main nodes -->
+        <rect x="355" y="180" width="200" height="70" rx="9" fill="#0f172a"/>
+        <rect x="355" y="180" width="200" height="70" rx="9" fill="rgba(6,78,59,.4)" stroke="#34d399" stroke-width="1.5"/>
+        <text x="367" y="197" class="node-id">04</text>
+        <text x="455" y="210" class="node-title">IPC Router</text>
+        <text x="455" y="230" class="node-sub">schemas · trusted sender</text>
+
+        <rect x="590" y="180" width="220" height="70" rx="9" fill="#0f172a"/>
+        <rect x="590" y="180" width="220" height="70" rx="9" fill="rgba(6,78,59,.4)" stroke="#34d399" stroke-width="1.5"/>
+        <text x="602" y="197" class="node-id">05</text>
+        <text x="700" y="210" class="node-title">TaskRuntimeRegistry</text>
+        <text x="700" y="230" class="node-sub">runs · agents · DAG · locks</text>
+
+        <rect x="835" y="180" width="190" height="70" rx="9" fill="#0f172a"/>
+        <rect x="835" y="180" width="190" height="70" rx="9" fill="rgba(6,78,59,.4)" stroke="#34d399" stroke-width="1.5"/>
+        <text x="847" y="197" class="node-id">06</text>
+        <text x="930" y="210" class="node-title">TaskController</text>
+        <text x="930" y="230" class="node-sub">one lead/child runtime adapter</text>
+
+        <rect x="590" y="345" width="220" height="70" rx="9" fill="#0f172a"/>
+        <rect x="590" y="345" width="220" height="70" rx="9" fill="rgba(6,78,59,.4)" stroke="#34d399" stroke-width="1.5"/>
+        <text x="602" y="362" class="node-id">07</text>
+        <text x="700" y="375" class="node-title">AgentHostPool</text>
+        <text x="700" y="395" class="node-sub">one empty Host + one booted SRT spare</text>
+
+        <rect x="835" y="345" width="200" height="70" rx="9" fill="#0f172a"/>
+        <rect x="835" y="345" width="200" height="70" rx="9" fill="rgba(6,78,59,.4)" stroke="#34d399" stroke-width="1.5"/>
+        <text x="847" y="362" class="node-id">08</text>
+        <text x="935" y="375" class="node-title">AgentHostClient</text>
+        <text x="935" y="395" class="node-sub">spawn · stdio JSON-RPC · timeouts</text>
+
+        <rect x="355" y="520" width="200" height="70" rx="9" fill="#0f172a"/>
+        <rect x="355" y="520" width="200" height="70" rx="9" fill="rgba(6,78,59,.28)" stroke="#34d399"/>
+        <text x="367" y="537" class="node-id">09</text>
+        <text x="455" y="550" class="node-title">Workspace Service</text>
+        <text x="455" y="570" class="node-sub">choose · create · register · probe</text>
+
+        <rect x="355" y="635" width="200" height="70" rx="9" fill="#0f172a"/>
+        <rect x="355" y="635" width="200" height="70" rx="9" fill="rgba(6,78,59,.28)" stroke="#34d399"/>
+        <text x="367" y="652" class="node-id">10</text>
+        <text x="455" y="665" class="node-title">GitHub Service</text>
+        <text x="455" y="685" class="node-sub">authenticated repo list + clone</text>
+
+        <rect x="355" y="750" width="200" height="70" rx="9" fill="#0f172a"/>
+        <rect x="355" y="750" width="200" height="70" rx="9" fill="rgba(6,78,59,.28)" stroke="#34d399"/>
+        <text x="367" y="767" class="node-id">11</text>
+        <text x="455" y="780" class="node-title">GitWorktreeService</text>
+        <text x="455" y="800" class="node-sub">probe · create · validate · serialize</text>
+
+        <rect x="600" y="520" width="200" height="70" rx="9" fill="#0f172a"/>
+        <rect x="600" y="520" width="200" height="70" rx="9" fill="rgba(6,78,59,.28)" stroke="#34d399"/>
+        <text x="612" y="537" class="node-id">12</text>
+        <text x="700" y="550" class="node-title">AppStore</text>
+        <text x="700" y="570" class="node-sub">sole application-state database owner</text>
+
+        <rect x="600" y="635" width="200" height="70" rx="9" fill="#0f172a"/>
+        <rect x="600" y="635" width="200" height="70" rx="9" fill="rgba(136,19,55,.22)" stroke="#fb7185"/>
+        <text x="612" y="652" class="node-id">13</text>
+        <text x="700" y="665" class="node-title">Credential Store</text>
+        <text x="700" y="685" class="node-sub">safeStorage · encrypted keys · status</text>
+
+        <rect x="600" y="750" width="200" height="70" rx="9" fill="#0f172a"/>
+        <rect x="600" y="750" width="200" height="70" rx="9" fill="rgba(6,78,59,.28)" stroke="#34d399"/>
+        <text x="612" y="767" class="node-id">14</text>
+        <text x="700" y="780" class="node-title">Subagent Config</text>
+        <text x="700" y="800" class="node-sub">profiles · capability ceiling</text>
+
+        <rect x="820" y="520" width="200" height="70" rx="9" fill="#0f172a"/>
+        <rect x="820" y="520" width="200" height="70" rx="9" fill="rgba(6,78,59,.28)" stroke="#34d399"/>
+        <text x="832" y="537" class="node-id">15</text>
+        <text x="920" y="550" class="node-title">FileBrowserService</text>
+        <text x="920" y="570" class="node-sub">safe reads · scans · file watching</text>
+
+        <rect x="820" y="635" width="200" height="70" rx="9" fill="#0f172a"/>
+        <rect x="820" y="635" width="200" height="70" rx="9" fill="rgba(6,78,59,.28)" stroke="#34d399"/>
+        <text x="832" y="652" class="node-id">16</text>
+        <text x="920" y="665" class="node-title">GitReviewService</text>
+        <text x="920" y="685" class="node-sub">diff · Accept · Reject</text>
+
+        <!-- Agent Host / SRT nodes -->
+        <rect x="1135" y="350" width="285" height="70" rx="9" fill="#0f172a"/>
+        <rect x="1135" y="350" width="285" height="70" rx="9" fill="rgba(120,53,15,.3)" stroke="#fbbf24" stroke-width="1.5"/>
+        <text x="1147" y="367" class="node-id">17</text>
+        <text x="1278" y="380" class="node-title">Agent Host Supervisor</text>
+        <text x="1278" y="400" class="node-sub">boot/attach · worker lifecycle · real keys in memory</text>
+
+        <rect x="1140" y="565" width="280" height="70" rx="9" fill="#0f172a"/>
+        <rect x="1140" y="565" width="280" height="70" rx="9" fill="rgba(136,19,55,.28)" stroke="#fb7185"/>
+        <text x="1152" y="582" class="node-id">18</text>
+        <text x="1280" y="595" class="node-title">Permission + Replacement</text>
+        <text x="1280" y="615" class="node-sub">broker · canonical grants · reopen/continue</text>
+
+        <rect x="1140" y="485" width="280" height="70" rx="9" fill="#0f172a"/>
+        <rect x="1140" y="485" width="280" height="70" rx="9" fill="rgba(136,19,55,.28)" stroke="#fb7185" stroke-width="1.5"/>
+        <text x="1152" y="502" class="node-id">19</text>
+        <text x="1280" y="515" class="node-title">SandboxManager + Policy</text>
+        <text x="1280" y="535" class="node-sub">filesystem/network profile · fail closed</text>
+
+        <rect x="1140" y="710" width="280" height="70" rx="9" fill="#0f172a"/>
+        <rect x="1140" y="710" width="280" height="70" rx="9" fill="rgba(136,19,55,.28)" stroke="#fb7185"/>
+        <text x="1152" y="727" class="node-id">20</text>
+        <text x="1280" y="740" class="node-title">HTTP / SOCKS / TLS Proxy</text>
+        <text x="1280" y="760" class="node-sub">domain filter · MITM CA · sentinel injection</text>
+
+        <rect x="1510" y="220" width="300" height="70" rx="9" fill="#0f172a"/>
+        <rect x="1510" y="220" width="300" height="70" rx="9" fill="rgba(136,19,55,.4)" stroke="#fb7185" stroke-width="1.5"/>
+        <text x="1522" y="237" class="node-id">21</text>
+        <text x="1660" y="250" class="node-title">Pi Worker RPC Service</text>
+        <text x="1660" y="270" class="node-sub">worker.mjs · isolated environment · JSON-RPC</text>
+
+        <rect x="1510" y="365" width="300" height="70" rx="9" fill="#0f172a"/>
+        <rect x="1510" y="365" width="300" height="70" rx="9" fill="rgba(136,19,55,.4)" stroke="#fb7185" stroke-width="1.5"/>
+        <text x="1522" y="382" class="node-id">22</text>
+        <text x="1660" y="395" class="node-title">Pi AgentSession</text>
+        <text x="1660" y="415" class="node-sub">reasoning · model · queue · todo · session branch</text>
+
+        <rect x="1510" y="535" width="300" height="70" rx="9" fill="#0f172a"/>
+        <rect x="1510" y="535" width="300" height="70" rx="9" fill="rgba(251,146,60,.28)" stroke="#fb923c"/>
+        <text x="1522" y="552" class="node-id">23</text>
+        <text x="1660" y="565" class="node-title">AG-UI Adapter</text>
+        <text x="1660" y="585" class="node-sub">messages · reasoning · tools · queue events</text>
+
+        <rect x="1510" y="670" width="300" height="70" rx="9" fill="#0f172a"/>
+        <rect x="1510" y="670" width="300" height="70" rx="9" fill="rgba(136,19,55,.4)" stroke="#fb7185" stroke-width="1.5"/>
+        <text x="1522" y="687" class="node-id">24</text>
+        <text x="1660" y="700" class="node-title">Pi Tools + Child Processes</text>
+        <text x="1660" y="720" class="node-sub">read/write/edit/search/bash/request_access/task</text>
+
+        <!-- Data and external nodes -->
+        <rect x="60" y="1010" width="190" height="75" rx="9" fill="#0f172a"/>
+        <rect x="60" y="1010" width="190" height="75" rx="9" fill="rgba(76,29,149,.4)" stroke="#a78bfa"/>
+        <text x="72" y="1027" class="node-id">25</text>
+        <text x="155" y="1042" class="node-title">SQLite app.sqlite</text>
+        <text x="155" y="1062" class="node-sub">projects · tasks · runs</text>
+
+        <rect x="270" y="1010" width="190" height="75" rx="9" fill="#0f172a"/>
+        <rect x="270" y="1010" width="190" height="75" rx="9" fill="rgba(76,29,149,.4)" stroke="#a78bfa"/>
+        <text x="282" y="1027" class="node-id">26</text>
+        <text x="365" y="1042" class="node-title">Keychain / safeStorage</text>
+        <text x="365" y="1062" class="node-sub">encrypted provider credentials</text>
+
+        <rect x="480" y="1010" width="240" height="75" rx="9" fill="#0f172a"/>
+        <rect x="480" y="1010" width="240" height="75" rx="9" fill="rgba(76,29,149,.4)" stroke="#a78bfa"/>
+        <text x="492" y="1027" class="node-id">27</text>
+        <text x="600" y="1042" class="node-title">Execution Root</text>
+        <text x="600" y="1062" class="node-sub">Local project OR app-managed Worktree</text>
+
+        <rect x="740" y="1010" width="180" height="75" rx="9" fill="#0f172a"/>
+        <rect x="740" y="1010" width="180" height="75" rx="9" fill="rgba(76,29,149,.4)" stroke="#a78bfa"/>
+        <text x="752" y="1027" class="node-id">28</text>
+        <text x="830" y="1042" class="node-title">Pi JSONL</text>
+        <text x="830" y="1062" class="node-sub">canonical per-agent session</text>
+
+        <rect x="940" y="1010" width="200" height="75" rx="9" fill="#0f172a"/>
+        <rect x="940" y="1010" width="200" height="75" rx="9" fill="rgba(76,29,149,.4)" stroke="#a78bfa"/>
+        <text x="952" y="1027" class="node-id">29</text>
+        <text x="1040" y="1042" class="node-title">Review Baseline Store</text>
+        <text x="1040" y="1062" class="node-sub">tree refs · indexes · shadow Git</text>
+
+        <rect x="1160" y="1010" width="180" height="75" rx="9" fill="#0f172a"/>
+        <rect x="1160" y="1010" width="180" height="75" rx="9" fill="rgba(76,29,149,.4)" stroke="#a78bfa"/>
+        <text x="1172" y="1027" class="node-id">30</text>
+        <text x="1250" y="1042" class="node-title">.codey/agents.json</text>
+        <text x="1250" y="1062" class="node-sub">optional subagent profiles</text>
+
+        <rect x="1360" y="1010" width="230" height="75" rx="9" fill="#0f172a"/>
+        <rect x="1360" y="1010" width="230" height="75" rx="9" fill="rgba(30,41,59,.55)" stroke="#94a3b8"/>
+        <text x="1372" y="1027" class="node-id">31</text>
+        <text x="1475" y="1042" class="node-title">Bundled gh → GitHub</text>
+        <text x="1475" y="1062" class="node-sub">host authentication · list/clone only today</text>
+
+        <rect x="1610" y="1010" width="210" height="75" rx="9" fill="#0f172a"/>
+        <rect x="1610" y="1010" width="210" height="75" rx="9" fill="rgba(30,41,59,.55)" stroke="#94a3b8"/>
+        <text x="1622" y="1027" class="node-id">32</text>
+        <text x="1715" y="1042" class="node-title">Model Provider APIs</text>
+        <text x="1715" y="1062" class="node-sub">OpenAI · DeepSeek · xAI</text>
+
+        <!-- Labels and legend -->
+        <text x="286" y="315" class="flow-label">typed IPC</text>
+        <text x="1045" y="367" class="flow-label">stdio JSON-RPC</text>
+        <text x="1427" y="506" class="flow-label">wrap + spawn</text>
+
+        <g transform="translate(50 1125)">
+          <line x1="0" y1="0" x2="42" y2="0" stroke="#22d3ee" stroke-width="2" marker-end="url(#arrow-primary)"/>
+          <text x="55" y="4" class="flow-label">primary request/runtime flow</text>
+          <line x1="280" y1="0" x2="322" y2="0" stroke="#64748b" stroke-width="1.2" marker-end="url(#arrow)"/>
+          <text x="335" y="4" class="flow-label">service/data call</text>
+          <line x1="520" y1="0" x2="562" y2="0" stroke="#fb923c" stroke-width="1.5" stroke-dasharray="7 5" marker-end="url(#arrow-async)"/>
+          <text x="575" y="4" class="flow-label">event/delegation</text>
+          <line x1="780" y1="0" x2="822" y2="0" stroke="#fb7185" stroke-width="1.5" stroke-dasharray="6 5" marker-end="url(#arrow-trust)"/>
+          <text x="835" y="4" class="flow-label">permission/credential/trust</text>
+          <text x="1170" y="4" class="small-label">No localhost app server · production loads packaged renderer assets</text>
+        </g>
+      </svg>
+    </section>
+
+    <h2 class="section-heading">2 · Sandbox 开启、复用、临时替换与销毁</h2>
+    <p class="section-note">Sandbox 在 agent.boot 时开启，不在 conversation 创建时开启；Lead 可以缓存，Subagent 结束立即释放。</p>
+    <section class="diagram-container" aria-label="Sandbox lifecycle">
+      <svg viewBox="0 0 1900 520" role="img" aria-labelledby="lifecycle-title lifecycle-description">
+        <title id="lifecycle-title">Codey sandbox lifecycle</title>
+        <desc id="lifecycle-description">The lifecycle shows normal startup through boot and attach, lead runtime reuse, temporary worker replacement after an external path grant, and final teardown through worker process-group termination and SandboxManager reset.</desc>
+        <defs>
+          <pattern id="grid-life" width="40" height="40" patternUnits="userSpaceOnUse">
+            <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#1e293b" stroke-width="0.5"/>
+          </pattern>
+          <marker id="life-arrow" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+            <polygon points="0 0, 10 3.5, 0 7" fill="#64748b"/>
+          </marker>
+          <marker id="life-primary" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+            <polygon points="0 0, 10 3.5, 0 7" fill="#22d3ee"/>
+          </marker>
+          <marker id="life-trust" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+            <polygon points="0 0, 10 3.5, 0 7" fill="#fb7185"/>
+          </marker>
+        </defs>
+        <rect width="100%" height="100%" fill="url(#grid-life)"/>
+
+        <text x="30" y="72" class="lane-title">START</text>
+        <text x="30" y="190" class="lane-title">REUSE</text>
+        <text x="30" y="308" class="lane-title">GRANT</text>
+        <text x="30" y="426" class="lane-title">DESTROY</text>
+
+        <!-- lifecycle connectors -->
+        <path d="M 250 65 H 300" stroke="#22d3ee" stroke-width="2" fill="none" marker-end="url(#life-primary)"/>
+        <path d="M 500 65 H 550" stroke="#22d3ee" stroke-width="2" fill="none" marker-end="url(#life-primary)"/>
+        <path d="M 750 65 H 800" stroke="#22d3ee" stroke-width="2" fill="none" marker-end="url(#life-primary)"/>
+        <path d="M 1000 65 H 1050" stroke="#22d3ee" stroke-width="2" fill="none" marker-end="url(#life-primary)"/>
+        <path d="M 1250 65 H 1300" stroke="#22d3ee" stroke-width="2" fill="none" marker-end="url(#life-primary)"/>
+        <path d="M 1500 65 H 1550" stroke="#22d3ee" stroke-width="2" fill="none" marker-end="url(#life-primary)"/>
+
+        <path d="M 250 183 H 350" stroke="#64748b" stroke-width="1.5" fill="none" marker-end="url(#life-arrow)"/>
+        <path d="M 600 183 H 700" stroke="#64748b" stroke-width="1.5" fill="none" marker-end="url(#life-arrow)"/>
+        <path d="M 950 183 H 1050" stroke="#64748b" stroke-width="1.5" fill="none" marker-end="url(#life-arrow)"/>
+        <path d="M 1300 183 H 1400" stroke="#64748b" stroke-width="1.5" fill="none" marker-end="url(#life-arrow)"/>
+
+        <path d="M 250 301 H 300" stroke="#fb7185" stroke-width="1.7" stroke-dasharray="6 5" fill="none" marker-end="url(#life-trust)"/>
+        <path d="M 500 301 H 550" stroke="#fb7185" stroke-width="1.7" stroke-dasharray="6 5" fill="none" marker-end="url(#life-trust)"/>
+        <path d="M 750 301 H 800" stroke="#fb7185" stroke-width="1.7" stroke-dasharray="6 5" fill="none" marker-end="url(#life-trust)"/>
+        <path d="M 1000 301 H 1050" stroke="#fb7185" stroke-width="1.7" stroke-dasharray="6 5" fill="none" marker-end="url(#life-trust)"/>
+        <path d="M 1250 301 H 1300" stroke="#fb7185" stroke-width="1.7" stroke-dasharray="6 5" fill="none" marker-end="url(#life-trust)"/>
+        <path d="M 1500 301 H 1550" stroke="#fb7185" stroke-width="1.7" stroke-dasharray="6 5" fill="none" marker-end="url(#life-trust)"/>
+
+        <path d="M 300 419 H 390" stroke="#64748b" stroke-width="1.5" fill="none" marker-end="url(#life-arrow)"/>
+        <path d="M 630 419 H 720" stroke="#64748b" stroke-width="1.5" fill="none" marker-end="url(#life-arrow)"/>
+        <path d="M 960 419 H 1050" stroke="#64748b" stroke-width="1.5" fill="none" marker-end="url(#life-arrow)"/>
+        <path d="M 1290 419 H 1380" stroke="#64748b" stroke-width="1.5" fill="none" marker-end="url(#life-arrow)"/>
+
+        <!-- START nodes -->
+        <g>
+          <rect x="70" y="35" width="180" height="60" rx="8" fill="#0f172a" stroke="#22d3ee"/>
+          <text x="160" y="60" class="node-title">Trigger</text>
+          <text x="160" y="80" class="node-sub">select / open / prompt / subagent</text>
+
+          <rect x="300" y="35" width="200" height="60" rx="8" fill="#0f172a" stroke="#34d399"/>
+          <text x="400" y="60" class="node-title">Pool acquire</text>
+          <text x="400" y="80" class="node-sub">matching spare or new Host</text>
+
+          <rect x="550" y="35" width="200" height="60" rx="8" fill="#0f172a" stroke="#fbbf24"/>
+          <text x="650" y="60" class="node-title">Spawn Agent Host</text>
+          <text x="650" y="80" class="node-sub">trusted Electron-as-Node process</text>
+
+          <rect x="800" y="35" width="200" height="60" rx="8" fill="#0f172a" stroke="#fbbf24"/>
+          <text x="900" y="60" class="node-title">agent.boot</text>
+          <text x="900" y="80" class="node-sub">immutable profile inputs</text>
+
+          <rect x="1050" y="35" width="200" height="60" rx="8" fill="#0f172a" stroke="#fb7185"/>
+          <text x="1150" y="60" class="node-title">SRT initialize</text>
+          <text x="1150" y="80" class="node-sub">policy + proxy + CA · fail closed</text>
+
+          <rect x="1300" y="35" width="200" height="60" rx="8" fill="#0f172a" stroke="#fb7185"/>
+          <text x="1400" y="60" class="node-title">Spawn Pi Worker</text>
+          <text x="1400" y="80" class="node-sub">whole process tree inside SRT</text>
+
+          <rect x="1550" y="35" width="250" height="60" rx="8" fill="#0f172a" stroke="#22d3ee"/>
+          <text x="1675" y="60" class="node-title">agent.attach → READY</text>
+          <text x="1675" y="80" class="node-sub">identity + model + existing/new Pi session</text>
+        </g>
+
+        <!-- REUSE nodes -->
+        <g>
+          <rect x="70" y="153" width="180" height="60" rx="8" fill="#0f172a" stroke="#34d399"/>
+          <text x="160" y="178" class="node-title">Run settles</text>
+          <text x="160" y="198" class="node-sub">prompt result + snapshot persisted</text>
+
+          <rect x="350" y="153" width="250" height="60" rx="8" fill="#0f172a" stroke="#34d399"/>
+          <text x="475" y="178" class="node-title">Selected lead stays READY</text>
+          <text x="475" y="198" class="node-sub">next prompt reuses same Host/SRT/session</text>
+
+          <rect x="700" y="153" width="250" height="60" rx="8" fill="#0f172a" stroke="#34d399"/>
+          <text x="825" y="178" class="node-title">Unselected idle grace</text>
+          <text x="825" y="198" class="node-sub">max 1 runtime · 5 minute TTL</text>
+
+          <rect x="1050" y="153" width="250" height="60" rx="8" fill="#0f172a" stroke="#fbbf24"/>
+          <text x="1175" y="178" class="node-title">Booted spare</text>
+          <text x="1175" y="198" class="node-sub">max 1 identity-free SRT Worker</text>
+
+          <rect x="1400" y="153" width="400" height="60" rx="8" fill="#0f172a" stroke="#94a3b8"/>
+          <text x="1600" y="178" class="node-title">Normal Cancel does not destroy SRT</text>
+          <text x="1600" y="198" class="node-sub">abort turn only; 10s cancel timeout escalates to Host kill</text>
+        </g>
+
+        <!-- GRANT nodes -->
+        <g>
+          <rect x="70" y="271" width="180" height="60" rx="8" fill="#0f172a" stroke="#fb7185"/>
+          <text x="160" y="296" class="node-title">request_access</text>
+          <text x="160" y="316" class="node-sub">external file permission approved</text>
+
+          <rect x="300" y="271" width="200" height="60" rx="8" fill="#0f172a" stroke="#fb7185"/>
+          <text x="400" y="296" class="node-title">Abort current turn</text>
+          <text x="400" y="316" class="node-sub">session remains canonical in JSONL</text>
+
+          <rect x="550" y="271" width="200" height="60" rx="8" fill="#0f172a" stroke="#fb7185"/>
+          <text x="650" y="296" class="node-title">Stop + reset</text>
+          <text x="650" y="316" class="node-sub">old Worker and SRT reclaimed</text>
+
+          <rect x="800" y="271" width="200" height="60" rx="8" fill="#0f172a" stroke="#fb7185"/>
+          <text x="900" y="296" class="node-title">Initialize with grant</text>
+          <text x="900" y="316" class="node-sub">canonical run-scoped path added</text>
+
+          <rect x="1050" y="271" width="200" height="60" rx="8" fill="#0f172a" stroke="#fb7185"/>
+          <text x="1150" y="296" class="node-title">Reopen same session</text>
+          <text x="1150" y="316" class="node-sub">new Worker · same agent identity</text>
+
+          <rect x="1300" y="271" width="200" height="60" rx="8" fill="#0f172a" stroke="#fb7185"/>
+          <text x="1400" y="296" class="node-title">Hidden continue</text>
+          <text x="1400" y="316" class="node-sub">retry blocked operation</text>
+
+          <rect x="1550" y="271" width="250" height="60" rx="8" fill="#0f172a" stroke="#fb7185"/>
+          <text x="1675" y="296" class="node-title">Recycle clean baseline</text>
+          <text x="1675" y="316" class="node-sub">run ends → remove grant → restart again</text>
+        </g>
+
+        <!-- DESTROY nodes -->
+        <g>
+          <rect x="70" y="389" width="230" height="60" rx="8" fill="#0f172a" stroke="#94a3b8"/>
+          <text x="185" y="414" class="node-title">Destroy trigger</text>
+          <text x="185" y="434" class="node-sub">subagent / TTL / mode / quit / fault</text>
+
+          <rect x="390" y="389" width="240" height="60" rx="8" fill="#0f172a" stroke="#94a3b8"/>
+          <text x="510" y="414" class="node-title">dispose or terminate</text>
+          <text x="510" y="434" class="node-sub">best-effort agent.dispose then Host signal</text>
+
+          <rect x="720" y="389" width="240" height="60" rx="8" fill="#0f172a" stroke="#94a3b8"/>
+          <text x="840" y="414" class="node-title">Stop process group</text>
+          <text x="840" y="434" class="node-sub">stdin close → SIGTERM → SIGKILL fallback</text>
+
+          <rect x="1050" y="389" width="240" height="60" rx="8" fill="#0f172a" stroke="#fb7185"/>
+          <text x="1170" y="414" class="node-title">SandboxManager.reset</text>
+          <text x="1170" y="434" class="node-sub">proxy / sentinel / SRT session released</text>
+
+          <rect x="1380" y="389" width="420" height="60" rx="8" fill="#0f172a" stroke="#a78bfa"/>
+          <text x="1590" y="414" class="node-title">Runtime gone; durable conversation remains</text>
+          <text x="1590" y="434" class="node-sub">SQLite + Pi JSONL + Local/Worktree files + review baseline</text>
+        </g>
+
+        <text x="70" y="490" class="small-label">Lead runtimes may stay warm. Every terminal Subagent calls controller.dispose() immediately. App quit terminates leads, children, and both pool spares.</text>
+      </svg>
+    </section>
+
+    <section class="cards" aria-label="Architecture callouts">
+      <article class="card">
+        <div class="card-header">
+          <span class="card-dot" style="background: var(--client)"></span>
+          <h2>COMPONENT COUNT</h2>
+        </div>
+        <ul>
+          <li>24 runtime/service components inside the product.</li>
+          <li>8 durable or external nodes: DB, Keychain, roots, sessions, review, config, GitHub and model APIs.</li>
+          <li>Stored conversations are data; only selected/running/short-idle agents own live SRTs.</li>
+        </ul>
+      </article>
+      <article class="card">
+        <div class="card-header">
+          <span class="card-dot" style="background: var(--security)"></span>
+          <h2>TRUST & ISOLATION</h2>
+        </div>
+        <ul>
+          <li>Renderer talks only through the context-isolated typed bridge.</li>
+          <li>Electron Main and Agent Host are trusted; only Pi Worker and descendants are inside SRT.</li>
+          <li>Local/Worktree chooses the execution root; SRT independently enforces process access.</li>
+        </ul>
+      </article>
+      <article class="card">
+        <div class="card-header">
+          <span class="card-dot" style="background: var(--async)"></span>
+          <h2>CURRENT BOUNDARY</h2>
+        </div>
+        <ul>
+          <li>Implemented GitHub integration currently stops at repository list and clone.</li>
+          <li>Merge, push and pull-request delivery are not implemented yet.</li>
+          <li>No global concurrent-agent limit exists; SRT is beta and macOS sandbox-exec based.</li>
+        </ul>
+      </article>
+    </section>
+
+    <p class="footer">Codey · Current implementation topology · 2026-08-18</p>
+  </main>
+
+  <script>
+    async function captureReport() {
+      const report = document.getElementById("report-container");
+      const bounds = report.getBoundingClientRect();
+      const padding = 32;
+      return html2canvas(document.body, {
+        backgroundColor: "#020617",
+        scale: 2,
+        useCORS: true,
+        ignoreElements: (element) => element.classList && element.classList.contains("toolbar"),
+        x: bounds.left + window.scrollX - padding,
+        y: bounds.top + window.scrollY - padding,
+        width: bounds.width + padding * 2,
+        height: bounds.height + padding * 2
+      });
+    }
+
+    async function copyAsImage(button) {
+      const original = button.textContent;
+      try {
+        const canvas = await captureReport();
+        const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/png"));
+        await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
+        button.textContent = "Copied";
+      } catch (error) {
+        button.textContent = "Failed";
+      }
+      setTimeout(() => { button.textContent = original; }, 2000);
+    }
+
+    async function downloadPNG(button) {
+      const original = button.textContent;
+      try {
+        button.textContent = "Exporting";
+        const canvas = await captureReport();
+        const link = document.createElement("a");
+        link.download = "codey-architecture.png";
+        link.href = canvas.toDataURL("image/png");
+        link.click();
+        button.textContent = "Done";
+      } catch (error) {
+        button.textContent = "Failed";
+      }
+      setTimeout(() => { button.textContent = original; }, 2000);
+    }
+
+    async function downloadPDF(button) {
+      const original = button.textContent;
+      try {
+        button.textContent = "Exporting";
+        const canvas = await captureReport();
+        const image = canvas.toDataURL("image/png");
+        const { jsPDF } = window.jspdf;
+        const orientation = canvas.width > canvas.height ? "landscape" : "portrait";
+        const pdf = new jsPDF({
+          orientation,
+          unit: "px",
+          format: [canvas.width, canvas.height],
+          hotfixes: ["px_scaling"]
+        });
+        pdf.addImage(image, "PNG", 0, 0, canvas.width, canvas.height);
+        pdf.save("codey-architecture.pdf");
+        button.textContent = "Done";
+      } catch (error) {
+        button.textContent = "Failed";
+      }
+      setTimeout(() => { button.textContent = original; }, 2000);
+    }
+  </script>
+</body>
+</html>

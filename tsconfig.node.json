@@ -1,0 +1,26 @@
+{
+  "compilerOptions": {
+    "composite": true,
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "types": ["node", "electron", "vitest/globals"],
+    "allowSyntheticDefaultImports": true
+  },
+  "include": [
+    "electron.vite.config.ts",
+    "vite.agent-host.config.ts",
+    "vitest.config.ts",
+    "vitest.agent-host.config.ts",
+    "src/agent-host/**/*.ts",
+    "src/main/**/*.ts",
+    "src/preload/**/*.ts",
+    "src/shared/**/*.ts",
+    "test/**/*.ts"
+  ]
+}

@@ -1,0 +1,10 @@
+node_modules/
+out/
+dist/
+resources/gh/
+coverage/
+.env
+.env.local
+.DS_Store
+*.log
+*.tsbuildinfo
